@@ -1,0 +1,73 @@
+version: '3.8'
+
+networks:
+  tvstore-net:
+    driver: overlay
+
+services:
+  frontend:
+    image: tvstore-frontend
+    ports:
+      - "80:80"
+    deploy:
+      replicas: 2
+    networks:
+      - tvstore-net
+
+  backend:
+    image: tvstore-backend
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb+srv://andronousss:test@uniprojects.9q0rgra.mongodb.net/television_store?appName=uniprojects
+    ports:
+      - "3000:3000"
+    deploy:
+      replicas: 2
+    networks:
+      - tvstore-net
+
+  db:
+    image: mongo
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - tvstore-net
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+      - source: alert_rules
+        target: /etc/prometheus/alert_rules.yml
+    networks:
+      - tvstore-net
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - tvstore-net
+
+  node-exporter:
+    image: prom/node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - tvstore-net
+
+configs:
+  prometheus_config:
+    file: ./prometheus.yml
+  alert_rules:
+    file: ./alert_rules.yml
+
+volumes:
+  mongo-data:
+  grafana-data:

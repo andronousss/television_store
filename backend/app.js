@@ -6,12 +6,17 @@ const authRoutes = require("./routes/authRoutes");
 const tvRoutes = require("./routes/tvRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const statsRoutes = require("./routes/stats");
+const { register, metricsMiddleware } = require("./metrics");
 require("dotenv").config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true
+}));
 app.use(express.json());
+app.use(metricsMiddleware);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../frontend")));
 
@@ -40,12 +45,18 @@ app.get("/", (req, res) => {
   });
 });
 
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", register.contentType);
+  res.end(await register.metrics());
+});
+
 app.use((req, res) => {
   res.status(404).json({ 
     message: "Route not found",
     path: req.path 
   });
 });
+
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
